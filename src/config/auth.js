@@ -1,4 +1,6 @@
 export default {
-  secret: 'c7846c2330aca84c70efe23f016f2ea2',
+  secret: 'eda53caaf0a5c6fe035ce20baeefa684',
   expiresIn: '7d'
 };
+
+// The MD5 hash for gympointbootcamp2019byrocketseat is : eda53caaf0a5c6fe035ce20baeefa684
