@@ -1,2 +1,2 @@
 Rocketseat, Gympoint
-Desafio dos módulos 02
+Desafio do módulo 02
