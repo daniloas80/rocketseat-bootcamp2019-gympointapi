@@ -4,7 +4,7 @@ import Plans from '../models/Plans';
 class PlansController {
   async index(req, res) {
     const plans = await Plans.findAll();
-    console.log(plans.length);
+
     if (plans.length >= 1) {
       return res.json(plans);
     }
@@ -87,14 +87,13 @@ class PlansController {
         id: req.params.id
       }
     })
-      // eslint-disable-next-line func-names
-      .then(function(deletedRecord) {
+      .then(function checkDeleted(deletedRecord) {
         if (deletedRecord === 1) {
           res.status(200).json({ message: 'Deleted successfully' });
         }
         res.status(404).json({ message: 'Record not found' });
       })
-      .catch(function(error) {
+      .catch(function checkError(error) {
         res.status(500).json(error);
       });
   }
