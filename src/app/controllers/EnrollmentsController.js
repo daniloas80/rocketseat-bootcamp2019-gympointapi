@@ -1,6 +1,6 @@
 import * as Yup from 'yup';
-import { startOfHour, parseISO, isBefore, format, addMonths } from 'date-fns';
-import pt from 'date-fns/locale/pt';
+import { startOfHour, parseISO, isBefore, addMonths } from 'date-fns';
+// import pt from 'date-fns/locale/pt';
 import Students from '../models/Students';
 import Plans from '../models/Plans';
 import Enrollments from '../models/Enrollments';
@@ -52,6 +52,15 @@ class EnrollmentsController {
       return res.status(400).json({ error: 'Past dates are not permitted' });
     }
 
+    // Verifica se o id do estudante já está matriculado
+    const enrollCheck = await Enrollments.findOne({
+      where: { student_id: req.body.student_id }
+    });
+
+    if (enrollCheck) {
+      return res.status(400).json({ error: 'Student already enrolling' });
+    }
+
     // Verifica se o id do estudante passado exite na base de dados
     const student = await Students.findByPk(student_id);
     if (!student) {
@@ -69,7 +78,7 @@ class EnrollmentsController {
     const end_date = addMonths(parseISO(start_date), plan.duration);
 
     // desta forma retornamos somente as informações que precisamos para o frontend
-    const { name, title } = await Enrollments.create({
+    await Enrollments.create({
       student_id,
       plan_id,
       start_date: parseISO(start_date),
@@ -77,13 +86,7 @@ class EnrollmentsController {
       price: payPrice
     });
 
-    // const {
-    //   student_id,
-    //   plan_id,
-    //   end_date,
-    //   price
-    // } = await Enrollments.create(req.body);
-
+    // informações filtradas passada para o frontend
     return res.json({
       student_id,
       name: student.name,
@@ -96,42 +99,64 @@ class EnrollmentsController {
   }
 
   async update(req, res) {
+    // Verifica se o id do plano passado exite na base de dados
+    const enrollments = await Enrollments.findByPk(req.params.id);
+    if (!enrollments) {
+      return res.status(400).json({ error: 'Enrollment not found' });
+    }
+
     // código para validação das informações que são passada pelo usuário
     const schema = Yup.object().shape({
-      title: Yup.string().required(),
-      duration: Yup.number()
-        .min(1)
-        .positive()
-        .required(),
-      price: Yup.number()
-        .min(0)
-        .positive()
-        .required()
+      student_id: Yup.number().required(),
+      plan_id: Yup.number().required(),
+      start_date: Yup.date().required()
     });
 
     if (!(await schema.isValid(req.body))) {
       return res.status(400).json({ error: 'Validation fails' });
     }
 
-    const { title } = req.body;
+    const { student_id, plan_id, start_date } = req.body;
     // // console.log(Students);
 
-    const plan = await Enrollments.findByPk(req.params.id);
+    // const enroll = await Enrollments.findByPk(req.params.id);
 
-    if (title !== plan.title) {
-      const planExists = await Enrollments.findOne({ where: { title } });
-
-      if (planExists) {
-        return res.status(400).json({ error: 'Plan already exists' });
-      }
+    // Verifica se o id do estudante passado exite na base de dados
+    const student = await Students.findByPk(student_id);
+    if (!student) {
+      return res.status(400).json({ error: 'Student not found' });
     }
 
-    const { id, duration, price } = await plan.update(req.body);
+    // Verifica se já existe um estudante matriculado caso o usuário tenta passar um estudante diferente
+    if (student_id !== enrollments.student_id) {
+      return res.status(400).json({ error: 'Student already enrolling' });
+    }
+
+    // Verifica se o id do plano passado exite na base de dados
+    const plan = await Plans.findByPk(plan_id);
+    if (!plan) {
+      return res.status(400).json({ error: 'Plan not found' });
+    }
+
+    // preço a pagar conforme a duração do plano
+    const payPrice = plan.price * plan.duration;
+    const end_date = addMonths(parseISO(start_date), plan.duration);
+
+    await enrollments.update({
+      plan_id,
+      start_date: parseISO(start_date),
+      end_date,
+      price: payPrice
+    });
+    // informações filtradas passada para o frontend
     return res.json({
-      id,
-      title,
-      duration,
-      price
+      student_id,
+      name: student.name,
+      plan_id,
+      title: plan.title,
+      start_date,
+      end_date,
+      payPrice
     });
   }
 
