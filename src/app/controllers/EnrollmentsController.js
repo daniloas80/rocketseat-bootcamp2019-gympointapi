@@ -1,6 +1,6 @@
 import * as Yup from 'yup';
-import { startOfHour, parseISO, isBefore, addMonths } from 'date-fns';
-// import pt from 'date-fns/locale/pt';
+import { startOfHour, parseISO, isBefore, addMonths, format } from 'date-fns';
+import pt from 'date-fns/locale/pt';
 import Students from '../models/Students';
 import Plans from '../models/Plans';
 import Enrollments from '../models/Enrollments';
@@ -47,18 +47,10 @@ class EnrollmentsController {
     /**
      * Check for past dates
      */
+    const start_tdate = parseISO(start_date);
     const hourStart = startOfHour(parseISO(start_date));
     if (isBefore(hourStart, new Date())) {
       return res.status(400).json({ error: 'Past dates are not permitted' });
-    }
-
-    // Verifica se o id do estudante já está matriculado
-    const enrollCheck = await Enrollments.findOne({
-      where: { student_id: req.body.student_id }
-    });
-
-    if (enrollCheck) {
-      return res.status(400).json({ error: 'Student already enrolling' });
     }
 
     // Verifica se o id do estudante passado exite na base de dados
@@ -77,7 +69,30 @@ class EnrollmentsController {
     const payPrice = plan.price * plan.duration;
     const end_date = addMonths(parseISO(start_date), plan.duration);
 
-    // desta forma retornamos somente as informações que precisamos para o frontend
+    // o aluno pode ter várias matrículas, porém não poderá ter duas matrículas antes do término da matrícula corrente
+    const enrollCheck = await Enrollments.findAll({
+      where: {
+        student_id: req.body.student_id
+      },
+      order: [['end_date', 'DESC']]
+    });
+
+    // Verifica se o id do estudante já está matriculado
+    if (enrollCheck) {
+      // Verifico qual o último dia da matrícula do aluno
+      const lastDay = enrollCheck[0].end_date;
+      const formattedDate = format(lastDay, 'dd/MM/yyyy', {
+        locale: pt
+      });
+
+      if (start_tdate <= lastDay) {
+        return res.status(400).json({
+          error: `Student already enrolling. He can not start before ${formattedDate}`
+        });
+      }
+    }
+
+    // gravo no banco de dados as informações da matrícula
     await Enrollments.create({
       student_id,
       plan_id,
