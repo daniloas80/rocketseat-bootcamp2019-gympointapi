@@ -4,6 +4,9 @@ import pt from 'date-fns/locale/pt';
 import Students from '../models/Students';
 import Plans from '../models/Plans';
 import Enrollments from '../models/Enrollments';
+import Notification from '../schemas/Notification';
+import EnrollmentMail from '../jobs/EnrollmentMail';
+import Queue from '../../lib/Queue';
 
 class EnrollmentsController {
   async index(req, res) {
@@ -99,6 +102,40 @@ class EnrollmentsController {
       start_date: parseISO(start_date),
       end_date,
       price: payPrice
+    });
+
+    // guardo a informação que será passado por email para o aluno
+    const formattedStartDay = format(start_tdate, 'dd/MM/yyyy', {
+      locale: pt
+    });
+    const formattedFinalDay = format(end_date, 'dd/MM/yyyy', {
+      locale: pt
+    });
+    // O alemão usa vírgula como separador de decimal e ponto para milhares por isso o uso do 'de-DE' (não funcionou ainda deixou o . como separador decimal. Assim como também não funcionou 'sgn-BR')
+    const formattedPayPrice = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(payPrice);
+
+    const formattedPlanPrice = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(plan.price);
+
+    // Para o envio do e-mail a função abaixo não era necessário, poderei incrementar isso na versão web ou mobile
+    await Notification.create({
+      content: `Olá ${student.name} sua matrícula foi realizada com sucesso. O plano escolhido foi  ${plan.title} que se inicia em ${formattedStartDay} com o término em ${formattedFinalDay}. O valor de sua mensalidade é de R$ ${formattedPayPrice}`,
+      student: student_id
+    });
+
+    // processo de envio de emails por filas usando o redis
+    await Queue.add(EnrollmentMail.key, {
+      student,
+      plan,
+      formattedStartDay,
+      formattedFinalDay,
+      formattedPlanPrice,
+      formattedPayPrice
     });
 
     // informações filtradas passada para o frontend
