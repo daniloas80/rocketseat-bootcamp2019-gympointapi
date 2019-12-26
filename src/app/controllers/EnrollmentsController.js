@@ -56,7 +56,7 @@ class EnrollmentsController {
       return res.status(400).json({ error: 'Past dates are not permitted' });
     }
 
-    // Verifica se o id do estudante passado exite na base de dados
+    // Verifica se o id do aluno passado exite na base de dados
     const student = await Students.findByPk(student_id);
     if (!student) {
       return res.status(400).json({ error: 'Student not found' });
@@ -75,7 +75,8 @@ class EnrollmentsController {
     // o aluno pode ter várias matrículas, porém não poderá ter duas matrículas antes do término da matrícula corrente
     const enrollCheck = await Enrollments.findAll({
       where: {
-        student_id: req.body.student_id
+        // student_id: req.body.student_id
+        student_id
       },
       order: [['end_date', 'DESC']]
     });
