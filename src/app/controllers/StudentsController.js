@@ -1,7 +1,40 @@
+import { Op } from 'sequelize';
 import * as Yup from 'yup';
 import Students from '../models/Students';
 
 class StudentsController {
+  async index(req, res) {
+    // Se o usuário estiver tentando fazer uma edição, a rota virá com o parâmentro
+    // id preenchido, caso contrário, o usuário estará na página principal listando todos.
+    const student_id = req.params.id;
+
+    if (student_id > 0) {
+      const students = await Students.findByPk(student_id);
+      if (Object.keys(students).length >= 1) {
+        return res.json(students);
+      }
+    }
+
+    const whereLike = req.query.name ? req.query.name : '';
+
+    const students = await Students.findAll({
+      where: {
+        name: {
+          [Op.like]: `%${whereLike}%`
+        }
+      },
+      order: [['name', 'ASC']]
+    });
+
+    // const students = await Students.findAll();
+
+    if (Object.keys(students).length >= 1) {
+      return res.json(students);
+    }
+
+    return res.json({ message: 'There is no Student to list' });
+  }
+
   async store(req, res) {
     // código para validação das informações que são passada pelo usuário
     const schema = Yup.object().shape({
@@ -75,6 +108,23 @@ class StudentsController {
       weight,
       height
     });
+  }
+
+  async delete(req, res) {
+    Students.destroy({
+      where: {
+        id: req.params.id
+      }
+    })
+      .then(function checkDeleted(deletedRecord) {
+        if (deletedRecord === 1) {
+          res.status(200).json({ message: 'Deleted successfully' });
+        }
+        res.status(404).json({ message: 'Record not found' });
+      })
+      .catch(function checkError(error) {
+        res.status(500).json(error);
+      });
   }
 }
 export default new StudentsController();

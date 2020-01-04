@@ -25,8 +25,11 @@ routes.post('/students/:id/help-orders', HelpOrdersController.store);
 
 routes.use(authMiddleware);
 // Students routes
+routes.get('/students', StudentsController.index);
+routes.get('/students/:id/show-student', StudentsController.index);
 routes.post('/students', StudentsController.store);
 routes.put('/students/:id', StudentsController.update);
+routes.delete('/students/:id', StudentsController.delete);
 // Plans routes
 routes.get('/plans', PlansController.index);
 routes.post('/plans', PlansController.store);

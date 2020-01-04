@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import 'express-async-errors';
+import cors from 'cors';
 import Youch from 'youch';
 import * as Sentry from '@sentry/node';
 import sentryConfig from './config/sentry';
@@ -20,6 +21,9 @@ class App {
 
   middlewares() {
     this.server.use(Sentry.Handlers.requestHandler());
+    // abaixo deverá ser usado em ambiente de produção
+    // this.server.use(cors({ origin: '<http://local onde a aplicação react está hospedada>'}));
+    this.server.use(cors());
     this.server.use(express.json());
   }
 
