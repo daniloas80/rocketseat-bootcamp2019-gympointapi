@@ -16,6 +16,7 @@ routes.get('/', (req, res) => {
 });
 
 routes.post('/sessions', SessionController.store);
+routes.get('/students/:id', StudentsController.index);
 // Checkins routes
 routes.post('/students/:id/checkins', CheckinsController.store);
 routes.get('/students/:id/checkins', CheckinsController.index);

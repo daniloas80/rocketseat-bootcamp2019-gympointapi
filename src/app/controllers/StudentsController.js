@@ -6,6 +6,9 @@ class StudentsController {
   async index(req, res) {
     // Se o usuário estiver tentando fazer uma edição, a rota virá com o parâmentro
     // id preenchido, caso contrário, o usuário estará na página principal listando todos.
+    // No App o usuário que é somente o aluno, não necessita de credenciais para usar o app.
+    // O aluno só precisa digitar seu ir para acessar o sistema
+
     const student_id = req.params.id;
 
     if (student_id > 0) {
