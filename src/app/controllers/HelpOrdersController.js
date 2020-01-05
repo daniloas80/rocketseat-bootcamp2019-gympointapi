@@ -1,4 +1,7 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable no-dupe-keys */
 import * as Yup from 'yup';
+import { Op } from 'sequelize';
 import Students from '../models/Students';
 import HelpOrders from '../models/HelpOrders';
 import OrdersHelpMail from '../jobs/OrdersHelpMail';
@@ -6,15 +9,48 @@ import Queue from '../../lib/Queue';
 
 class HelpOrdersController {
   async index(req, res) {
-    const student_id = req.params.id;
 
+    // const params = new URL(document.location).searchParams;
+   // const studentId = params.get('id') ? params.get('id') : '';
+
+    const {student_id, id } = req.params;
+
+    // caso o usuário tenha passado um id, ele está querendo ver todas as
+    // perguntas daquele usuário, caso venha sem id, o sistema irá listar
+    // todas as perguntas que ainda não foram respondidas
     // Verifica se o id do aluno passado exite na base de dados
-    const student = await Students.findByPk(student_id);
-    if (!student) {
-      return res.status(400).json({ error: 'Student not found' });
+    if (student_id > 0) {
+      // const student = await Students.findByPk(student_id);
+      const studentHelpOrders = await HelpOrders.findOne({
+        include: [
+          {
+            model: Students,
+            as: 'students',
+            attributes: ['id', 'name']
+          }
+        ],
+        where: {
+          id
+          // student_id: {
+          //   [Op.not]: null
+          // },
+          // answer: {
+          //   [Op.is]: null
+          // },
+          // student_id
+        }
+      });
+      if (Object.keys(studentHelpOrders).length >= 1) {
+        return res.json(studentHelpOrders);
+      }
     }
 
-    const helpOrders = await HelpOrders.findAll({
+    // const student = await Students.findByPk(student_id);
+    // if (!student) {
+    //   return res.status(400).json({ error: 'Student not found' });
+    // }
+
+    const helporders = await HelpOrders.findAll({
       include: [
         {
           model: Students,
@@ -23,11 +59,16 @@ class HelpOrdersController {
         }
       ],
       where: {
-        student_id
+        student_id: {
+          [Op.not]: null
+        },
+        answer: {
+          [Op.is]: null
+        }
       }
     });
 
-    return res.status(200).json({ helpOrders });
+    return res.status(200).json(helporders);
   }
 
   async store(req, res) {

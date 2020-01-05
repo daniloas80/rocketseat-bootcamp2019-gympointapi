@@ -3,9 +3,20 @@ import Plans from '../models/Plans';
 
 class PlansController {
   async index(req, res) {
+    // Se o usuário estiver tentando fazer uma edição, a rota virá com o parâmentro
+    // id preenchido, caso contrário, o usuário estará na página principal listando todos.
+    const plan_id = req.params.id;
+
+    if (plan_id > 0) {
+      const plans = await Plans.findByPk(plan_id);
+      if (Object.keys(plans).length >= 1) {
+        return res.json(plans);
+      }
+    }
+
     const plans = await Plans.findAll();
 
-    if (plans.length >= 1) {
+    if (Object.keys(plans).length >= 1) {
       return res.json(plans);
     }
     return res.json({ message: 'There is no Plan to list' });
